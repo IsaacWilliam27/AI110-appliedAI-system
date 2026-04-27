@@ -1,0 +1,55 @@
+flowchart TD
+    USER(["👤 User / Browser"])
+
+    subgraph STREAMLIT["⚡ src/app.py — Streamlit Web App"]
+        SIDEBAR["Sidebar<br/>────────────────<br/>Genre · Mood selectors<br/>Energy · Positivity · Danceability<br/>Acousticness sliders<br/>Dark ↔ Light Mode toggle<br/>Beginner ↔ Expert Mode toggle<br/>Active Profile indicator"]
+        T_DISC["🎵 Discover Tab<br/>────────────────<br/>AI step log expander<br/>Song cards · Score bars<br/>Beginner tip sentence per card"]
+        T_ADD["➕ Add a Song Tab<br/>────────────────<br/>Manual form · CSV upload<br/>Duplicate detection<br/>Manage & delete catalog"]
+        T_PROF["👤 Profiles Tab<br/>────────────────<br/>Create · Load · Delete<br/>Persists to JSON"]
+        SIDEBAR -->|prefs_from_state| T_DISC
+    end
+
+    subgraph AGENT["🤖 src/agent.py — RecommendationAgent"]
+        S1["Step 1<br/>Parse Preferences<br/>(genre, mood, sliders)"]
+        S2["Step 2<br/>Score Every Song<br/>(all N songs vs prefs)"]
+        S3["Step 3<br/>Apply Diversity<br/>(one song per artist first)"]
+        S4["Step 4<br/>Final Ranking<br/>(sort desc · slice top-k)"]
+        S1 --> S2 --> S3 --> S4
+    end
+
+    subgraph RECO["🧠 src/recommender.py — Core Logic"]
+        SS["score_song()<br/>────────────────<br/>Gaussian kernel: exp(−Δ²/2σ²)<br/>Genre   × 0.25<br/>Mood    × 0.30<br/>Energy  × 0.18<br/>Dance   × 0.15<br/>Valence × 0.05<br/>Acoustic× 0.02"]
+        LS["load_songs()<br/>CSV → typed dicts<br/>int · float casts"]
+        RS["recommend_songs()<br/>Score all · sort · slice"]
+        OOP["Song dataclass<br/>UserProfile dataclass<br/>Recommender class"]
+    end
+
+    subgraph EXPL["💬 src/explainer.py — Few-Shot Explainer"]
+        FS["12 curated examples<br/>6 beginner · 6 expert<br/>(style fingerprints)"]
+        MATCH["_nearest_shot()<br/>Boolean feature matching<br/>genre · mood · energy · acoustic"]
+        GEN["generate_explanation()<br/>Personalize template with<br/>actual score + song values"]
+        FS --> MATCH --> GEN
+    end
+
+    subgraph DATA["💾 data/"]
+        CSV[("songs.csv<br/>18 songs · 11 fields<br/>Community-extensible")]
+        PROF[("profiles.json<br/>Saved user profiles<br/>JSON array")]
+    end
+
+    subgraph TESTING["🧪 tests/"]
+        UT["test_recommender.py<br/>26 unit + integration tests<br/>pytest · auto-discovered"]
+        EH["eval_harness.py<br/>10 real-world scenarios<br/>14 checks · confidence margins"]
+    end
+
+    USER --> SIDEBAR
+    T_DISC -->|"agent.run(prefs, k)"| AGENT
+    S2 -->|"score_song(prefs, song)"| SS
+    LS -->|"open + parse"| CSV
+    SS -.->|"uses"| LS
+    S4 -->|"results + AgentStep list"| T_DISC
+    T_DISC -->|"generate_explanation()"| EXPL
+    GEN -->|"natural-language sentence"| T_DISC
+    T_ADD -->|"append_song() / delete_song()"| CSV
+    T_PROF -->|"read / write"| PROF
+    RECO -->|"imported by"| UT
+    RECO -->|"imported by"| EH

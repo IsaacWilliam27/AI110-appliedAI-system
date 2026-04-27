@@ -19,9 +19,26 @@ It matters because recommendation systems are everywhere — Spotify, YouTube, N
 
 ---
 
+## Screenshots
+
+> Add your own screenshots to `assets/` and they will appear here.
+
+| Discover Tab | Sidebar |
+|:---:|:---:|
+| ![Discover tab](assets/screenshot-discover.png) | ![Sidebar](assets/screenshot-sidebar.png) |
+
+| Add a Song Tab | Profiles Tab |
+|:---:|:---:|
+| ![Add a Song tab](assets/screenshot-add-song.png) | ![Profiles tab](assets/screenshot-profiles.png) |
+
+---
+
 ## Architecture Overview
 
 ### System Diagram (Mermaid.js)
+
+> Source file: [`assets/system-diagram.mmd`](assets/system-diagram.mmd)  
+> To export as PNG: `npx -p @mermaid-js/mermaid-cli mmdc -i assets/system-diagram.mmd -o assets/system-diagram.png`
 
 ```mermaid
 flowchart TD
@@ -389,6 +406,12 @@ The hardest part was not the algorithms — it was Streamlit's session state mod
 
 ```
 AI110-appliedAI-system/
+├── assets/
+│   ├── system-diagram.mmd         # Mermaid source — export to PNG with mermaid-cli
+│   ├── screenshot-discover.png    # Discover tab — song cards with score bars
+│   ├── screenshot-sidebar.png     # Sidebar — Your Taste preference sliders
+│   ├── screenshot-add-song.png    # Add a Song tab — manual entry form
+│   └── screenshot-profiles.png   # Profiles tab — saved profiles + create form
 ├── src/
 │   ├── app.py           # Streamlit web app (UI, theming, tabs)
 │   ├── recommender.py   # Core scoring: score_song(), recommend_songs(), Song, UserProfile
