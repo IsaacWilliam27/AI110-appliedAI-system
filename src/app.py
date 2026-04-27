@@ -112,9 +112,10 @@ html { %%VARS%% }
     background-size:400% 400%;
     animation:grad 5s ease infinite;
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    color:transparent !important;
     margin-bottom:.1rem;
 }
-.vm-sub { color:var(--t2); font-size:.87rem; margin-bottom:1.4rem; }
+.vm-sub { color:var(--t2) !important; font-size:.87rem; margin-bottom:1.4rem; }
 
 /* ── tabs ── */
 .stTabs [data-baseweb="tab-list"] {
@@ -168,7 +169,7 @@ html { %%VARS%% }
 .slbl { font-size:.67rem; color:var(--t2); width:80px; flex-shrink:0; }
 .sbb  { flex:1; height:4px; background:var(--bar-empty); border-radius:2px; overflow:hidden; }
 .sbf  { height:100%; border-radius:2px; }
-.sv   { font-size:.66rem; color:var(--t3); width:30px; text-align:right; flex-shrink:0; }
+.sv   { font-size:.66rem; color:var(--t3); min-width:30px; text-align:right; flex-shrink:0; white-space:nowrap; }
 
 /* ── active profile pill (sidebar) ── */
 .apill {
@@ -211,17 +212,52 @@ html { %%VARS%% }
     letter-spacing:.12em; text-transform:uppercase; margin-bottom:.1rem; }
 .astep-name { font-size:.82rem; font-weight:700; color:var(--t1); margin-bottom:.15rem; }
 
+/* ── expander ── */
+[data-testid="stExpander"] {
+    background:var(--card) !important; border:1px solid var(--border) !important;
+    border-radius:14px !important; overflow:hidden; margin-bottom:.75rem;
+}
+[data-testid="stExpander"] summary {
+    color:var(--t1) !important; font-weight:600 !important;
+    font-size:.85rem !important; padding:.7rem 1rem !important;
+    background:transparent !important;
+}
+[data-testid="stExpander"] summary:hover { background:var(--card-h) !important; }
+[data-testid="stExpander"] summary svg { color:var(--t2) !important; }
+[data-testid="stExpanderDetails"] { padding:.25rem 1rem .75rem !important; }
+
+/* ── slider accent ── */
+[data-testid="stSlider"] [role="progressbar"] > div {
+    background:linear-gradient(90deg,#7c3aed,#06b6d4) !important;
+}
+[data-testid="stSlider"] [role="slider"] {
+    background:#7c3aed !important; border-color:#7c3aed !important;
+    box-shadow:0 0 0 4px rgba(124,58,237,.2) !important;
+}
+[data-testid="stSlider"] [data-testid="stTickBar"] { color:var(--t3) !important; }
+
+/* ── selectbox dropdown ── */
+[data-baseweb="popover"] > div {
+    background:var(--card) !important; border:1px solid var(--border) !important;
+    border-radius:12px !important; box-shadow:0 8px 32px rgba(0,0,0,.35) !important;
+}
+[data-baseweb="option"] { background:var(--card) !important; color:var(--t1) !important; }
+[data-baseweb="option"]:hover,
+[data-baseweb="option"][aria-selected="true"] { background:var(--card-h) !important; }
+
 /* ── inputs ── */
 .stTextInput > div > div > input,
 .stNumberInput input {
     background:var(--input-bg) !important; border:1px solid var(--input-bdr) !important;
     border-radius:10px !important; color:var(--t1) !important;
 }
-.stTextInput > div > div > input:focus {
+.stTextInput > div > div > input:focus,
+.stNumberInput input:focus {
     border-color:rgba(124,58,237,.5) !important;
     box-shadow:0 0 0 2px rgba(124,58,237,.12) !important;
 }
-label, p, .stMarkdown p, .stCaption { color:var(--t2) !important; }
+label, p, .stMarkdown p { color:var(--t2) !important; }
+[data-testid="stCaptionContainer"] p { color:var(--t3) !important; }
 .stSelectbox > div { color:var(--t1) !important; }
 
 /* ── buttons ── */
@@ -318,6 +354,10 @@ def prefs_from_state() -> dict:
 
 def score_color(s: float) -> str:
     return "var(--score-hi)" if s >= 0.75 else "var(--score-mid)" if s >= 0.45 else "var(--score-lo)"
+
+def _md_bold(text: str) -> str:
+    """Convert **bold** markdown to <strong> so it renders inside raw HTML divs."""
+    return re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
 
 # ── page config ───────────────────────────────────────────────────────────────
 
@@ -452,7 +492,7 @@ with st.expander("💡 New here? Learn how VibeMatch works"):
 # ── tabs ──────────────────────────────────────────────────────────────────────
 
 tab_discover, tab_add, tab_profiles = st.tabs(
-    ["🎵 &nbsp;Discover", "➕ &nbsp;Add a Song", "👤 &nbsp;Profiles"]
+    ["🎵  Discover", "➕  Add a Song", "👤  Profiles"]
 )
 
 # ════════════════════════════ TAB 1 · DISCOVER ════════════════════════════════
@@ -497,7 +537,7 @@ with tab_discover:
         if st.session_state.get("beginner_mode", True):
             exp_mode = "beginner"
             btext = generate_explanation(song, score, prefs, mode=exp_mode)
-            btip_html = f'<div class="btip">{btext}</div>'
+            btip_html = f'<div class="btip">{_md_bold(btext)}</div>'
 
         score_label = (
             f"{score*100:.0f}% match"
@@ -509,7 +549,7 @@ with tab_discover:
 <div class="srow">
   <span class="slbl" style="font-weight:700;color:var(--t1);">Overall</span>
   <div class="sbb"><div class="sbf" style="width:{score*100:.0f}%;background:{sc};"></div></div>
-  <span class="sv" style="color:{sc};font-weight:700;">{score_label}</span>
+  <span class="sv" style="color:{sc};font-weight:700;min-width:64px;">{score_label}</span>
 </div>"""
         for key, lbl in LABELS.items():
             val = rv.get(key, 0.0)
