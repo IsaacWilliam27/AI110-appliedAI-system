@@ -17,3 +17,4 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness,da
 16,Pulse Break,Starfield Drop,edm,euphoric,0.95,128,0.88,0.94,0.03,edm
 17,Rainy Season Blues,Hank Delrow,blues,melancholic,0.44,76,0.31,0.48,0.83,none
 18,Wildflower Drift,Sable June,folk,dreamy,0.33,88,0.67,0.44,0.91,none
+19,Wildflower,Billie Eilish,pop,moody,0.12,99,0.12,0.46,0.92,none

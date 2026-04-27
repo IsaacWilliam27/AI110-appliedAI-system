@@ -1,4 +1,5 @@
 import csv
+import io
 import json
 import re
 import streamlit as st
@@ -52,21 +53,21 @@ LABELS = {
 DARK_VARS = """
     --bg:#090914; --surface:#0f0f1e; --card:#14142a; --card-h:#1b1b32;
     --border:rgba(255,255,255,0.07); --border-a:rgba(124,58,237,0.5);
-    --t1:#f0f0ff; --t2:#8b8fa8; --t3:#4b5068;
-    --sidebar:rgba(255,255,255,0.025); --sdborder:rgba(255,255,255,0.06);
-    --input-bg:rgba(255,255,255,0.05); --input-bdr:rgba(255,255,255,0.1);
+    --t1:#f0f0ff; --t2:#a0a4bc; --t3:#4b5068;
+    --sidebar:#0d0d20; --sdborder:rgba(124,58,237,0.25);
+    --input-bg:rgba(255,255,255,0.06); --input-bdr:rgba(255,255,255,0.12);
     --bar-empty:rgba(255,255,255,0.07);
     --score-hi:#10b981; --score-mid:#f59e0b; --score-lo:#ef4444;
     --badge-g-bg:rgba(6,182,212,0.1); --badge-g-fg:#22d3ee; --badge-g-bdr:rgba(6,182,212,0.25);
     --badge-m-bg:rgba(124,58,237,0.12); --badge-m-fg:#a78bfa; --badge-m-bdr:rgba(124,58,237,0.25);
-    --active-bg:rgba(124,58,237,0.1); --active-bdr:rgba(124,58,237,0.4); --active-fg:#a78bfa;
+    --active-bg:rgba(124,58,237,0.15); --active-bdr:rgba(124,58,237,0.5); --active-fg:#a78bfa;
     --toggle-bg:rgba(255,255,255,0.07); --toggle-fg:#f0f0ff;
 """
 LIGHT_VARS = """
     --bg:#f0f0fa; --surface:#e6e6f4; --card:#ffffff; --card-h:#f7f7ff;
     --border:rgba(0,0,0,0.08); --border-a:rgba(124,58,237,0.45);
-    --t1:#0f0f20; --t2:#6b7280; --t3:#9ca3af;
-    --sidebar:rgba(0,0,0,0.03); --sdborder:rgba(0,0,0,0.07);
+    --t1:#0f0f20; --t2:#4b5068; --t3:#9ca3af;
+    --sidebar:#e8e8f8; --sdborder:rgba(124,58,237,0.2);
     --input-bg:rgba(0,0,0,0.04); --input-bdr:rgba(0,0,0,0.12);
     --bar-empty:rgba(0,0,0,0.07);
     --score-hi:#059669; --score-mid:#d97706; --score-lo:#dc2626;
@@ -79,22 +80,62 @@ LIGHT_VARS = """
 BASE_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-*  { font-family:'Inter',sans-serif !important; }
+body, p, div, a, button, input, textarea, select,
+label, h1, h2, h3, h4, h5, h6, li, td, th, blockquote {
+    font-family:'Inter',sans-serif !important;
+}
+/* Restore Streamlit icon font — expander arrows, etc. use Material Symbols ligatures */
+[data-testid="stIconMaterial"],
+[class*="material"],
+[class*="Material"] {
+    font-family:'Material Symbols Rounded','Material Icons' !important;
+    font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+}
 html { %%VARS%% }
 
 .stApp {
     background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%) !important;
     min-height: 100vh;
 }
-#MainMenu, footer, header { visibility:hidden; }
+#MainMenu, footer { visibility:hidden; }
+[data-testid="stHeader"]  { background:transparent !important; border:none !important; }
+[data-testid="stDeployButton"]  { display:none !important; }
+[data-testid="stStatusWidget"]  { display:none !important; }
+
+/* ── sidebar toggle (always visible, unmissable) ── */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {
+    visibility:visible !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:linear-gradient(180deg,#7c3aed,#5b21b6) !important;
+    border-radius:0 10px 10px 0 !important;
+    width:1.35rem !important;
+    min-height:3rem !important;
+    box-shadow:3px 0 16px rgba(124,58,237,0.55) !important;
+    z-index:9999 !important;
+    cursor:pointer !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg {
+    color:#fff !important; fill:#fff !important;
+}
+
 .block-container { padding-top:1.2rem !important; max-width:1060px !important; }
 
 /* ── sidebar ── */
 [data-testid="stSidebar"] {
     background:var(--sidebar) !important;
-    border-right:1px solid var(--sdborder) !important;
+    border-right:2px solid var(--sdborder) !important;
+    min-width:18rem !important;
+    transform:none !important;
+    visibility:visible !important;
 }
-[data-testid="stSidebar"] * { color:var(--t2) !important; }
+[data-testid="stSidebar"] label { color:var(--t2) !important; font-size:.8rem !important; }
+[data-testid="stSidebar"] p    { color:var(--t2) !important; }
+[data-testid="stSidebar"] [data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebar"] button[title="Collapse sidebar"] { display:none !important; }
 [data-testid="stSidebar"] h4 {
     font-size:.6rem !important; font-weight:700 !important;
     letter-spacing:.14em !important; text-transform:uppercase !important;
@@ -309,6 +350,16 @@ def append_song(song_dict: dict) -> None:
     with open(DATA_PATH, "a", newline="", encoding="utf-8") as f:
         csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore").writerow(song_dict)
 
+def delete_song(song_id: int) -> None:
+    with open(DATA_PATH, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = list(reader.fieldnames or [])
+        rows = [r for r in reader if int(r["id"]) != song_id]
+    with open(DATA_PATH, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
 def load_profiles() -> list:
     if not PROFILES_PATH.exists():
         PROFILES_PATH.write_text('{"profiles":[]}')
@@ -321,13 +372,9 @@ def delete_profile(name: str) -> None:
     save_profiles([p for p in load_profiles() if p["name"] != name])
 
 def apply_profile(p: dict) -> None:
-    st.session_state["pref_genre"]        = p.get("genre", "pop")
-    st.session_state["pref_mood"]         = p.get("mood", "happy")
-    st.session_state["pref_energy"]       = float(p.get("energy", 0.7))
-    st.session_state["pref_valence"]      = float(p.get("valence", 0.65))
-    st.session_state["pref_danceability"] = float(p.get("danceability", 0.6))
-    st.session_state["pref_acousticness"] = float(p.get("acousticness", 0.2))
-    st.session_state["active_profile"]    = p["name"]
+    # Store as pending — values are applied at the TOP of the next run,
+    # before any widgets are instantiated, avoiding StreamlitAPIException.
+    st.session_state["_pending_profile"] = p
 
 # ── misc helpers ──────────────────────────────────────────────────────────────
 
@@ -361,7 +408,12 @@ def _md_bold(text: str) -> str:
 
 # ── page config ───────────────────────────────────────────────────────────────
 
-st.set_page_config(page_title="VibeMatch", page_icon="🎵", layout="wide")
+st.set_page_config(
+    page_title="VibeMatch",
+    page_icon="🎵",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 # ── session state ─────────────────────────────────────────────────────────────
 
@@ -380,6 +432,23 @@ DEFAULTS = {
 for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+# ── Resolve pending profile load/clear (must run before any widget renders) ───
+if "_pending_profile" in st.session_state:
+    _pending = st.session_state.pop("_pending_profile")
+    if _pending is None:
+        # Clear: reset all preference keys to defaults
+        for _k, _v in DEFAULTS.items():
+            st.session_state[_k] = _v
+    else:
+        # Load: apply saved profile values
+        st.session_state["pref_genre"]        = _pending.get("genre", "pop")
+        st.session_state["pref_mood"]         = _pending.get("mood", "happy")
+        st.session_state["pref_energy"]       = float(_pending.get("energy", 0.7))
+        st.session_state["pref_valence"]      = float(_pending.get("valence", 0.65))
+        st.session_state["pref_danceability"] = float(_pending.get("danceability", 0.6))
+        st.session_state["pref_acousticness"] = float(_pending.get("acousticness", 0.2))
+        st.session_state["active_profile"]    = _pending.get("name")
 
 # ── CSS injection ─────────────────────────────────────────────────────────────
 
@@ -446,8 +515,7 @@ with st.sidebar:
             unsafe_allow_html=True,
         )
         if st.button("Clear Profile", use_container_width=True):
-            for k, v in DEFAULTS.items():
-                st.session_state[k] = v
+            st.session_state["_pending_profile"] = None
             st.rerun()
     else:
         st.markdown(
@@ -520,7 +588,7 @@ with tab_discover:
                 f'<div class="astep">'
                 f'<div class="astep-num">Step {step.step_num}</div>'
                 f'<div class="astep-name">{step.name}</div>'
-                f'{step.summary}'
+                f'{_md_bold(step.summary)}'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -575,43 +643,160 @@ with tab_discover:
 # ════════════════════════════ TAB 2 · ADD A SONG ══════════════════════════════
 
 with tab_add:
-    st.markdown('<p class="sh">Add a Song to the Catalog</p>', unsafe_allow_html=True)
-    st.caption("Songs you add are available to all users immediately.")
+    sub_manual, sub_csv, sub_manage = st.tabs(
+        ["➕  Manual Add", "📂  CSV Upload", "🗂️  Manage Catalog"]
+    )
 
-    with st.form("add_song_form", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            s_title       = st.text_input("Title *")
-            s_artist      = st.text_input("Artist *")
-            s_genre       = st.selectbox("Genre *",      CATALOG_GENRES)
-            s_mood        = st.selectbox("Mood *",       CATALOG_MOODS)
-            s_dance_style = st.selectbox("Dance Style",  DANCE_STYLES)
-        with c2:
-            s_tempo       = st.number_input("Tempo (BPM)", min_value=40, max_value=220, value=120, step=1)
-            s_energy      = st.slider("Energy",       0.0, 1.0, 0.70, 0.01, key="fs_e")
-            s_valence     = st.slider("Positivity",   0.0, 1.0, 0.65, 0.01, key="fs_v")
-            s_dance       = st.slider("Danceability", 0.0, 1.0, 0.60, 0.01, key="fs_d")
-            s_acoustic    = st.slider("Acousticness", 0.0, 1.0, 0.20, 0.01, key="fs_a")
+    # ── sub-tab 1: manual add ─────────────────────────────────────────────────
+    with sub_manual:
+        st.markdown('<p class="sh">Add a Song to the Catalog</p>', unsafe_allow_html=True)
+        st.caption("Songs you add are available to all users immediately.")
 
-        submitted = st.form_submit_button("➕  Add Song", use_container_width=True)
+        with st.form("add_song_form", clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            with c1:
+                s_title       = st.text_input("Title *")
+                s_artist      = st.text_input("Artist *")
+                s_genre       = st.selectbox("Genre *",      CATALOG_GENRES)
+                s_mood        = st.selectbox("Mood *",       CATALOG_MOODS)
+                s_dance_style = st.selectbox("Dance Style",  DANCE_STYLES)
+            with c2:
+                s_tempo    = st.number_input("Tempo (BPM)", min_value=40, max_value=220, value=120, step=1)
+                s_energy   = st.slider("Energy",       0.0, 1.0, 0.70, 0.01, key="fs_e")
+                s_valence  = st.slider("Positivity",   0.0, 1.0, 0.65, 0.01, key="fs_v")
+                s_dance    = st.slider("Danceability", 0.0, 1.0, 0.60, 0.01, key="fs_d")
+                s_acoustic = st.slider("Acousticness", 0.0, 1.0, 0.20, 0.01, key="fs_a")
 
-    if submitted:
-        if not s_title.strip() or not s_artist.strip():
-            st.error("Title and Artist are required.")
+            submitted = st.form_submit_button("➕  Add Song", use_container_width=True)
+
+        if submitted:
+            if not s_title.strip() or not s_artist.strip():
+                st.error("Title and Artist are required.")
+            elif any(
+                s["title"].strip().lower() == s_title.strip().lower()
+                and s["artist"].strip().lower() == s_artist.strip().lower()
+                for s in songs
+            ):
+                st.warning(f'"{s_title}" by {s_artist} is already in the catalog.')
+            else:
+                append_song({
+                    "title":        s_title.strip(),
+                    "artist":       s_artist.strip(),
+                    "genre":        s_genre,
+                    "mood":         s_mood,
+                    "energy":       s_energy,
+                    "tempo_bpm":    s_tempo,
+                    "valence":      s_valence,
+                    "danceability": s_dance,
+                    "acousticness": s_acoustic,
+                    "dance_style":  s_dance_style,
+                })
+                st.success(f"✓ **{s_title}** by {s_artist} added! Switch to Discover to see it.")
+
+    # ── sub-tab 2: CSV upload ─────────────────────────────────────────────────
+    with sub_csv:
+        st.markdown('<p class="sh">Bulk Import from CSV</p>', unsafe_allow_html=True)
+        st.caption(
+            "Required columns: `title`, `artist`, `genre`, `mood`, `energy`, "
+            "`tempo_bpm`, `valence`, `danceability`, `acousticness`  "
+            "· Optional: `dance_style`"
+        )
+
+        uploaded = st.file_uploader("Choose a CSV file", type="csv", key="csv_upload")
+
+        if uploaded is not None:
+            try:
+                content = uploaded.read().decode("utf-8")
+                reader  = csv.DictReader(io.StringIO(content))
+                REQUIRED_COLS = {
+                    "title", "artist", "genre", "mood",
+                    "energy", "tempo_bpm", "valence", "danceability", "acousticness",
+                }
+                missing_cols = REQUIRED_COLS - set(reader.fieldnames or [])
+                if missing_cols:
+                    st.error(f"CSV is missing columns: {', '.join(sorted(missing_cols))}")
+                else:
+                    csv_rows = list(reader)
+                    st.markdown(f"**{len(csv_rows)} row(s) found.** Preview (first 10):")
+                    st.table([
+                        {"Title": r["title"], "Artist": r["artist"],
+                         "Genre": r["genre"],  "Mood":   r["mood"]}
+                        for r in csv_rows[:10]
+                    ])
+
+                    if st.button("Import All", use_container_width=True, key="csv_import_btn"):
+                        existing_keys = {
+                            (s["title"].strip().lower(), s["artist"].strip().lower())
+                            for s in songs
+                        }
+                        added = skipped = errors = 0
+                        for row in csv_rows:
+                            key = (row["title"].strip().lower(), row["artist"].strip().lower())
+                            if key in existing_keys:
+                                skipped += 1
+                                continue
+                            try:
+                                append_song({
+                                    "title":        row["title"].strip(),
+                                    "artist":       row["artist"].strip(),
+                                    "genre":        row.get("genre", "pop"),
+                                    "mood":         row.get("mood", "happy"),
+                                    "energy":       float(row.get("energy", 0.7)),
+                                    "tempo_bpm":    int(float(row.get("tempo_bpm", 120))),
+                                    "valence":      float(row.get("valence", 0.65)),
+                                    "danceability": float(row.get("danceability", 0.6)),
+                                    "acousticness": float(row.get("acousticness", 0.2)),
+                                    "dance_style":  row.get("dance_style", "none"),
+                                })
+                                existing_keys.add(key)
+                                added += 1
+                            except (ValueError, KeyError):
+                                errors += 1
+                        msg = f"✓ Imported {added} song(s)."
+                        if skipped:
+                            msg += f" {skipped} duplicate(s) skipped."
+                        if errors:
+                            msg += f" {errors} row(s) had invalid data and were skipped."
+                        st.success(msg)
+                        st.rerun()
+            except Exception as e:
+                st.error(f"Could not read file: {e}")
+
+    # ── sub-tab 3: manage catalog ─────────────────────────────────────────────
+    with sub_manage:
+        st.markdown(
+            f'<p class="sh">Catalog &nbsp;·&nbsp; {len(songs)} songs</p>',
+            unsafe_allow_html=True,
+        )
+        search_q = st.text_input(
+            "Filter by title or artist", key="manage_search", placeholder="Search..."
+        )
+
+        filtered_songs = songs
+        if search_q.strip():
+            q = search_q.strip().lower()
+            filtered_songs = [
+                s for s in songs
+                if q in s["title"].lower() or q in s["artist"].lower()
+            ]
+
+        if not filtered_songs:
+            st.markdown('<p class="empty-state">No songs match your search.</p>', unsafe_allow_html=True)
         else:
-            append_song({
-                "title":        s_title.strip(),
-                "artist":       s_artist.strip(),
-                "genre":        s_genre,
-                "mood":         s_mood,
-                "energy":       s_energy,
-                "tempo_bpm":    s_tempo,
-                "valence":      s_valence,
-                "danceability": s_dance,
-                "acousticness": s_acoustic,
-                "dance_style":  s_dance_style,
-            })
-            st.success(f"✓ **{s_title}** by {s_artist} added to the catalog! Switch to Discover to see it.")
+            for s in filtered_songs:
+                icon = MOOD_EMOJI.get(s.get("mood", ""), "🎵")
+                col_info, col_btn = st.columns([6, 1])
+                with col_info:
+                    st.markdown(
+                        f"**{s['title']}** &nbsp;·&nbsp; {s['artist']} &nbsp; "
+                        f'<span class="badge bg">{s["genre"]}</span>'
+                        f'<span class="badge bm">{icon}&nbsp;{s["mood"]}</span>',
+                        unsafe_allow_html=True,
+                    )
+                with col_btn:
+                    if st.button("Delete", key=f"del_song_{s['id']}", use_container_width=True):
+                        delete_song(int(s["id"]))
+                        st.rerun()
 
 # ════════════════════════════ TAB 3 · PROFILES ════════════════════════════════
 
