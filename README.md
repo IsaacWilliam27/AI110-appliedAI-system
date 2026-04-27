@@ -415,3 +415,8 @@ AI110-appliedAI-system/
 | `python -m pytest tests/ -v` | Run all 26 unit tests |
 | `python tests/eval_harness.py` | Run the evaluation harness |
 | `python src/main.py` | Run the original CLI interface |
+
+
+---
+## Loom Link
+https://www.loom.com/share/ad6265cfb1fc478bb729bf614f374811
