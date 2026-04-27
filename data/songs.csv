@@ -1,19 +1,19 @@
-id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
-1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18
-2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71
-3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10
-4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86
-5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05
-6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92
-7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89
-8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
-9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
-10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
-11,Empty Hallways,Grey Verse,hip-hop,sad,0.55,85,0.22,0.68,0.31
-12,Golden Hour Kiss,Velvet Monroe,r&b,romantic,0.58,96,0.78,0.74,0.44
-13,Morning Sonata,Elena Vaskov,classical,peaceful,0.21,66,0.72,0.28,0.97
-14,Iron Collapse,Dreadforge,metal,aggressive,0.97,168,0.19,0.52,0.04
-15,Dirt Road Summer,Cal Henley,country,nostalgic,0.61,104,0.69,0.65,0.72
-16,Pulse Break,Starfield Drop,edm,euphoric,0.95,128,0.88,0.94,0.03
-17,Rainy Season Blues,Hank Delrow,blues,melancholic,0.44,76,0.31,0.48,0.83
-18,Wildflower Drift,Sable June,folk,dreamy,0.33,88,0.67,0.44,0.91
+id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness,dance_style
+1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18,pop
+2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71,none
+3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10,none
+4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86,none
+5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05,pop
+6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92,none
+7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89,none
+8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22,electronic
+9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78,none
+10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35,pop
+11,Empty Hallways,Grey Verse,hip-hop,sad,0.55,85,0.22,0.68,0.31,hip-hop
+12,Golden Hour Kiss,Velvet Monroe,r&b,romantic,0.58,96,0.78,0.74,0.44,r&b
+13,Morning Sonata,Elena Vaskov,classical,peaceful,0.21,66,0.72,0.28,0.97,none
+14,Iron Collapse,Dreadforge,metal,aggressive,0.97,168,0.19,0.52,0.04,none
+15,Dirt Road Summer,Cal Henley,country,nostalgic,0.61,104,0.69,0.65,0.72,none
+16,Pulse Break,Starfield Drop,edm,euphoric,0.95,128,0.88,0.94,0.03,edm
+17,Rainy Season Blues,Hank Delrow,blues,melancholic,0.44,76,0.31,0.48,0.83,none
+18,Wildflower Drift,Sable June,folk,dreamy,0.33,88,0.67,0.44,0.91,none

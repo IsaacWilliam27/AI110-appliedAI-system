@@ -24,12 +24,14 @@ def main() -> None:
 
     # Verification profile: pop / happy
     user_prefs = {
-        "genre":               "pop",
-        "mood":                "happy",
-        "target_energy":       0.80,
-        "target_valence":      0.82,
-        "target_acousticness": 0.15,
-        "likes_acoustic":      False,
+        "genre":                "pop",
+        "mood":                 "happy",
+        "target_energy":        0.80,
+        "target_danceability":  0.85,
+        "target_dance_style":   "pop",
+        "target_valence":       0.82,
+        "target_acousticness":  0.15,
+        "likes_acoustic":       False,
     }
 
     recommendations = recommend_songs(user_prefs, songs, k=5)

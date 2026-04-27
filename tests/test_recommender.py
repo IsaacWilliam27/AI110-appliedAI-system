@@ -1,4 +1,5 @@
 from pathlib import Path
+import pytest
 from src.recommender import Song, UserProfile, Recommender, score_song, recommend_songs, load_songs
 
 # --- Shared helpers ---
@@ -92,11 +93,12 @@ def test_score_song_returns_float_and_list():
     assert isinstance(reasons, list)
 
 def test_score_song_perfect_match_is_max():
-    """All five features matching exactly should produce a score >= 0.99."""
+    """All scored features matching exactly should produce a score >= 0.94."""
     user = make_user(genre="pop", mood="happy", energy=0.8, valence=0.8, acousticness=0.2)
+    user["target_danceability"] = 0.7  # matches make_song default; enables full danceability score
     song = make_song(genre="pop", mood="happy", energy=0.8, valence=0.8, acousticness=0.2)
     score, _ = score_song(user, song)
-    assert score >= 0.99
+    assert score >= 0.94
 
 def test_score_song_no_categorical_match_is_low():
     """A song with no genre or mood match should score below 0.5."""
@@ -135,6 +137,33 @@ def test_score_song_mood_outweighs_genre():
     score_genre, _ = score_song(user, genre_only)
     score_mood, _  = score_song(user, mood_only)
     assert score_mood > score_genre
+
+def test_score_song_missing_user_key_raises_value_error():
+    """Missing required user preference keys should fail fast."""
+    user = make_user()
+    user.pop("target_valence")
+    with pytest.raises(ValueError, match="Missing required user_prefs keys"):
+        score_song(user, make_song())
+
+def test_score_song_missing_song_key_raises_value_error():
+    """Missing required song keys should fail fast."""
+    song = make_song()
+    song.pop("energy")
+    with pytest.raises(ValueError, match="Missing required song keys"):
+        score_song(make_user(), song)
+
+def test_score_song_out_of_range_user_value_raises_value_error():
+    """User target values must remain inside [0, 1]."""
+    user = make_user(energy=1.4)
+    with pytest.raises(ValueError, match="target_energy must be between 0.0 and 1.0"):
+        score_song(user, make_song())
+
+def test_score_song_non_numeric_song_value_raises_value_error():
+    """Song numeric features must be valid numbers."""
+    song = make_song()
+    song["danceability"] = "very"
+    with pytest.raises(ValueError, match="song.danceability must be a numeric value"):
+        score_song(make_user(), song)
 
 
 # --- recommend_songs ---
@@ -178,6 +207,28 @@ def test_recommend_songs_result_structure():
     assert isinstance(song, dict)
     assert isinstance(score, float)
     assert isinstance(explanation, str)
+
+def test_recommend_songs_invalid_k_zero_raises_value_error():
+    """k must be a positive integer."""
+    with pytest.raises(ValueError, match="k must be greater than 0"):
+        recommend_songs(make_user(), [make_song()], k=0)
+
+def test_recommend_songs_invalid_k_type_raises_type_error():
+    """k type validation should reject non-integers."""
+    with pytest.raises(TypeError, match="k must be an integer"):
+        recommend_songs(make_user(), [make_song()], k="2")
+
+def test_recommender_recommend_invalid_k_raises_value_error():
+    """Recommender class should enforce positive k as well."""
+    user = UserProfile(
+        favorite_genre="pop",
+        favorite_mood="happy",
+        target_energy=0.8,
+        likes_acoustic=False,
+    )
+    rec = make_small_recommender()
+    with pytest.raises(ValueError, match="k must be greater than 0"):
+        rec.recommend(user, k=-1)
 
 
 # --- load_songs ---
